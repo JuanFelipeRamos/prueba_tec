@@ -1,7 +1,7 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router';
-import api from '@/services/axios'
+import { obtenerPerfilUsuario } from '@/services/obtenerPerfilUsuario'
 
 const userName = ref('')
 const userRole = ref('')
@@ -9,12 +9,26 @@ const router = useRouter()
 const linkGestionarUsuarios = ref(true)
 
 function cerrarSesion() {
-    localStorage.removeItem('access')
-    router.push('/')
+  localStorage.removeItem('access')
+  router.push('/')
   console.log('Sesión cerrada.')
 }
 
-const obtenerPerfilUsuario = async () => {
+const obtenerPerfil = async () => {
+  const ususarioAutenticado = await obtenerPerfilUsuario()
+  userName.value = ususarioAutenticado.username;
+  userRole.value = ususarioAutenticado.rol;
+
+  if (userRole.value !== 'administrador') {
+      linkGestionarUsuarios.value = false;
+  }
+}
+
+onMounted(() => {
+  obtenerPerfil()
+})
+
+/*const obtenerPerfilUsuario = async () => {
     try {
         const token = localStorage.getItem('access');
         if (!token) {
@@ -46,7 +60,7 @@ const obtenerPerfilUsuario = async () => {
     }
 }
 
-obtenerPerfilUsuario();
+obtenerPerfilUsuario();*/
 
 </script>
 
@@ -60,10 +74,10 @@ obtenerPerfilUsuario();
           <a href="#" class="nav-link">Dashboard</a>
         </li>
         <li>
-          <a href="#" class="nav-link">Tablero de notas</a>
+          <router-link to="/tablero" class="nav-link">Tablero de notas</router-link>
         </li>
         <li class="nav-link-with-badge" v-if="linkGestionarUsuarios">
-          <a href="#" class="nav-link">Usuarios</a>
+          <router-link to="/gestion-usuarios" class="nav-link">Usuarios</router-link>
         </li>
       </ul>
     </nav>

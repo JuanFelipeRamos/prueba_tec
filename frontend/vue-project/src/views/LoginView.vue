@@ -15,7 +15,7 @@ const login = async () => {
     })
 
     localStorage.setItem('access', response.data.access)
-    console.log('inicio de sesión exitoso:', response.data)
+    console.log('inicio de sesión exitoso')
     router.push('/tablero')
   } catch (error) {
         alert('Error al iniciar sesión, credenciales inválidas o usuario inactivo.')

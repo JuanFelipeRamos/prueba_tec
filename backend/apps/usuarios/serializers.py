@@ -17,6 +17,7 @@ class UsuariosSerializers(serializers.ModelSerializer):
         user = Usuarios(**validated_data)
 
         user.set_password(pwd)
+        user.is_active = True # cada usuario creado estará activo por defecto
         user.save()
 
         return user
