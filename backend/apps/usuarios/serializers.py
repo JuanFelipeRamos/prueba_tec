@@ -11,16 +11,6 @@ class UsuariosSerializers(serializers.ModelSerializer):
             }
         }
 
-    # validar que el usuario autenticado sea admin
-    def validate(self, data):
-        usuario_autenticado = self.context['request'].user
-
-        if usuario_autenticado.rol != "admin":
-            raise serializers.ValidationError(
-                "debes ser administrador para realizar esta acción."
-            )
-        return data
-
     # crear usuarios
     def create(self, validated_data):
         pwd = validated_data.pop("password")
