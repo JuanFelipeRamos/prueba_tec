@@ -12,7 +12,7 @@ class SoloAdministradores(permissions.BasePermission):
             return False
 
         # validar de forma estricta el rol de tu modelo
-        return request.user.rol == "admin"
+        return request.user.rol == "Administrador"
 
 class NotasViewSets(viewsets.ModelViewSet):
     queryset = Notas.objects.all()
