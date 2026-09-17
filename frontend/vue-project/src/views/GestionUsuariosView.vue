@@ -6,6 +6,7 @@ import { obtenerPerfilUsuario } from '@/services/obtenerPerfilUsuario'
 import ModalCrearUsuarios from '@/components/ModalCrearUsuarios.vue'
 import ModalActivarDesactivarUsuarios from '@/components/ModalActivarDesactivarUsuarios.vue'
 import ModalBorrarUsuarios from '@/components/ModalBorrarUsuarios.vue'
+import ModalEditarUsuarios from '@/components/ModalEditarUsuarios.vue'
 import api from '@/services/axios'
 
 const token = ref(localStorage.getItem('access'))
@@ -79,10 +80,10 @@ function cerrarModalCrear() {
   mostrarModalCrear.value = false
 }
 
-// Modal de confirmación para activar/desactivar un usuario
+// confirmación para activar/desactivar un usuario
 const mostrarModalEstado = ref(false)
 const usuarioSeleccionado = ref(null)
-const accionSeleccionada = ref('desactivar') // 'activar' | 'desactivar'
+const accionSeleccionada = ref('desactivar')
 
 function abrirModalEstado(usuario, accion) {
   usuarioSeleccionado.value = usuario
@@ -134,6 +135,29 @@ function abrirModalBorrar(usuario) {
 function cerrarModalBorrar() {
   mostrarModalBorrar.value = false
   usuarioABorrar.value = null
+}
+
+// editar usuario
+const mostrarModalEditar = ref(false)
+const usuarioAEditar = ref(null)
+
+function abrirModalEditar(usuario) {
+  usuarioAEditar.value = usuario
+  mostrarModalEditar.value = true
+}
+
+function cerrarModalEditar() {
+  mostrarModalEditar.value = false
+  usuarioAEditar.value = null
+}
+
+function onUsuarioEditado(cambios) {
+  const usuarioEnLista = listaUsuarios.value.find((u) => u.id === cambios.id)
+  if (usuarioEnLista) {
+    if (cambios.username !== undefined) usuarioEnLista.username = cambios.username
+    if (cambios.email !== undefined) usuarioEnLista.email = cambios.email
+    if (cambios.rol !== undefined) usuarioEnLista.rol = cambios.rol
+  }
 }
 </script>
 
@@ -193,7 +217,7 @@ function cerrarModalBorrar() {
                 <button type="button" class="btn-borrar" @click="abrirModalBorrar(usuario)">
                   Borrar
                 </button>
-                <button type="button" class="btn-editar">
+                <button type="button" class="btn-editar" @click="abrirModalEditar(usuario)">
                   Editar
                 </button>
                 <button
@@ -243,6 +267,13 @@ function cerrarModalBorrar() {
       :mostrar="mostrarModalBorrar"
       :usuario="usuarioABorrar"
       @cerrar="cerrarModalBorrar"
+    />
+
+    <ModalEditarUsuarios
+      :mostrar="mostrarModalEditar"
+      :usuario="usuarioAEditar"
+      @cerrar="cerrarModalEditar"
+      @editado="onUsuarioEditado"
     />
   </main>
 </template>

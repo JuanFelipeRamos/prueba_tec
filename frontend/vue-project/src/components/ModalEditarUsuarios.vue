@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import api from '@/services/axios'
 
 const props = defineProps({
@@ -7,20 +7,24 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  usuario: {
+    type: Object,
+    default: null,
+  },
 })
 
-const emit = defineEmits(['cerrar'])
+const emit = defineEmits(['cerrar', 'editado'])
 
 const username = ref('')
 const email = ref('')
-const password = ref('')
 const rol = ref('usuario')
+const rolOriginal = ref('usuario')
 
 function resetearFormulario() {
   username.value = ''
   email.value = ''
-  password.value = ''
-  rol.value = 'usuario'
+  rol.value = props.usuario?.rol || 'usuario'
+  rolOriginal.value = rol.value
 }
 
 watch(
@@ -32,67 +36,68 @@ watch(
   }
 )
 
+const placeholderUsername = computed(() => props.usuario?.username || 'JuanPerez06')
+const placeholderEmail = computed(() => props.usuario?.email || 'juan@empresa.com')
+
+const hayCambios = computed(() => {
+  return username.value.trim() !== '' || email.value.trim() !== '' || rol.value !== rolOriginal.value
+})
+
 function cerrar() {
   emit('cerrar')
 }
 
-const crearUsuario = async () => {
-    const token = localStorage.getItem('access')
-    try {
-        const response = await api.post('/usuarios/usuarios/', {
-          username: username.value,
-          email: email.value,
-          password: password.value,
-          rol: rol.value,
-        }, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
+const editarUsuario = async () => {
+  if (!hayCambios.value || !props.usuario) return
 
-        console.log('Usuario creado exitosamente:', response.data)
-        alert('Usuario creado exitosamente.')
-        cerrar()
-    } catch (error) {
-        console.error('Error al crear usuario:', error)
-        alert('Error al crear usuario. verifica los datos e inténtalo nuevamente.')
-    }
+  const token = localStorage.getItem('access')
+
+  const cambios = {}
+  if (username.value.trim() !== '') cambios.username = username.value.trim()
+  if (email.value.trim() !== '') cambios.email = email.value.trim()
+  if (rol.value !== rolOriginal.value) cambios.rol = rol.value
+
+  try {
+    const response = await api.patch(`/usuarios/usuarios/${props.usuario.id}/`, cambios, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    console.log('Usuario editado exitosamente:', response.data)
+    alert('Usuario editado exitosamente.')
+    emit('editado', { id: props.usuario.id, ...cambios })
+    cerrar()
+  } catch (error) {
+    console.error('Error al editar usuario:', error)
+    alert('Error al editar usuario. Verifica los datos e inténtalo nuevamente.')
+  }
 }
-
 </script>
 
 <template>
   <div v-if="mostrar" class="modal-overlay" @click.self="cerrar">
-    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="titulo-crear-usuario">
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="titulo-editar-usuario">
       <header class="modal-header">
-        <h2 id="titulo-crear-usuario" class="modal-titulo">Crear usuario</h2>
+        <h2 id="titulo-editar-usuario" class="modal-titulo">Editar usuario</h2>
         <button type="button" class="modal-cerrar" aria-label="Cerrar" @click="cerrar">
           &times;
         </button>
       </header>
 
-      <p class="modal-descripcion">
-        Registra un miembro del equipo para que pueda iniciar sesión en el portal.
-      </p>
-
-      <form class="modal-form" @submit.prevent="crearUsuario">
+      <form class="modal-form" @submit.prevent="editarUsuario">
         <section class="campo">
-          <label for="nombre">Nombre de usuario <span class="obligatorio">*</span></label>
-          <input id="nombre" v-model="username" type="text" placeholder="JuanPerez06" required />
+          <label for="nombre">Nombre de usuario</label>
+          <input id="nombre" v-model="username" type="text" :placeholder="placeholderUsername" />
         </section>
 
         <section class="campo">
-          <label for="correo">Correo electrónico <span class="obligatorio">*</span></label>
-          <input id="correo" v-model="email" type="email" placeholder="juan@empresa.com" required />
-        </section>
-
-        <section class="campo">
-          <label for="contrasena">Contraseña <span class="obligatorio">*</span></label>
-          <input id="contrasena" v-model="password" type="password" placeholder="••••••••" required />
+          <label for="correo">Correo electrónico</label>
+          <input id="correo" v-model="email" type="email" :placeholder="placeholderEmail" />
         </section>
 
         <fieldset class="campo-rol">
-          <legend>Rol asignado <span class="obligatorio">*</span></legend>
+          <legend>Rol asignado</legend>
 
           <section class="rol-opciones">
             <label class="rol-opcion" :class="{ 'rol-opcion--activa': rol === 'usuario' }">
@@ -115,7 +120,7 @@ const crearUsuario = async () => {
 
         <footer class="modal-footer">
           <button type="button" class="btn-cancelar" @click="cerrar">Cancelar</button>
-          <button type="submit" class="btn-crear">Crear usuario</button>
+          <button type="submit" class="btn-editar" :disabled="!hayCambios">Editar usuario</button>
         </footer>
       </form>
     </section>
@@ -174,13 +179,6 @@ const crearUsuario = async () => {
   color: #0f172a;
 }
 
-.modal-descripcion {
-  margin: 6px 0 22px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #64748b;
-}
-
 .modal-form {
   display: flex;
   flex-direction: column;
@@ -198,10 +196,6 @@ const crearUsuario = async () => {
   font-size: 13px;
   font-weight: 600;
   color: #0f172a;
-}
-
-.obligatorio {
-  color: #dc2626;
 }
 
 .campo input {
@@ -307,7 +301,7 @@ const crearUsuario = async () => {
   background-color: #f8fafc;
 }
 
-.btn-crear {
+.btn-editar {
   padding: 10px 20px;
   font-size: 14px;
   font-weight: 600;
@@ -318,7 +312,12 @@ const crearUsuario = async () => {
   cursor: pointer;
 }
 
-.btn-crear:hover {
+.btn-editar:hover {
   background-color: #2440c2;
+}
+
+.btn-editar:disabled {
+  background-color: #c7d2fe;
+  cursor: not-allowed;
 }
 </style>

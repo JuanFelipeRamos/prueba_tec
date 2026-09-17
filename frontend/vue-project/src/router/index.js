@@ -7,6 +7,7 @@ import GestionUsuariosView from '@/views/GestionUsuariosView.vue'
 import ModalCrearUsuarios from '@/components/ModalCrearUsuarios.vue'
 import ModalActivarDesactivarUsuarios from '@/components/ModalActivarDesactivarUsuarios.vue'
 import ModalBorrarUsuarios from '@/components/ModalBorrarUsuarios.vue'
+import ModalEditarUsuarios from '@/components/ModalEditarUsuarios.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -63,7 +64,13 @@ const router = createRouter({
       path: '/modal-borrar-usuarios',
       name: 'ModalBorrarUsuarios',
       component: ModalBorrarUsuarios,
-    }
+    },
+
+    {
+      path: '/modal-editar-usuarios',
+      name: 'ModalEditarUsuarios',
+      component: ModalEditarUsuarios,
+    },
   ],
 })
 
