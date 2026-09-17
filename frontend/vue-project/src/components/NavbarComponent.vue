@@ -37,7 +37,7 @@ onMounted(() => {
 
       <ul class="nav-links">
         <li>
-          <a href="#" class="nav-link">Dashboard</a>
+          <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
         </li>
         <li>
           <router-link to="/tablero" class="nav-link">Tablero de notas</router-link>

@@ -9,6 +9,8 @@ import ModalActivarDesactivarUsuarios from '@/components/ModalActivarDesactivarU
 import ModalBorrarUsuarios from '@/components/ModalBorrarUsuarios.vue'
 import ModalEditarUsuarios from '@/components/ModalEditarUsuarios.vue'
 import ModalBorrarNotas from '@/components/ModalBorrarNotas.vue'
+import DashboardView from '@/views/DashboardView.vue'
+import DashboardEstadisticas from '@/components/DashboardEstadisticas.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -78,6 +80,18 @@ const router = createRouter({
       name: 'ModalBorrarNotas',
       component: ModalBorrarNotas,
     },
+
+    {
+      path: '/dashboard',
+      name: 'Dashboard',
+      component: DashboardView,
+    },
+
+    {
+      path: '/dashboard-estadisticas',
+      name: 'DashboardEstadisticas',
+      component: DashboardEstadisticas,
+    }
   ],
 })
 
