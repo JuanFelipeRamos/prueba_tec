@@ -8,6 +8,7 @@ import ModalCrearUsuarios from '@/components/ModalCrearUsuarios.vue'
 import ModalActivarDesactivarUsuarios from '@/components/ModalActivarDesactivarUsuarios.vue'
 import ModalBorrarUsuarios from '@/components/ModalBorrarUsuarios.vue'
 import ModalEditarUsuarios from '@/components/ModalEditarUsuarios.vue'
+import ModalBorrarNotas from '@/components/ModalBorrarNotas.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -70,6 +71,12 @@ const router = createRouter({
       path: '/modal-editar-usuarios',
       name: 'ModalEditarUsuarios',
       component: ModalEditarUsuarios,
+    },
+
+    {
+      path: '/modal-borrar-notas',
+      name: 'ModalBorrarNotas',
+      component: ModalBorrarNotas,
     },
   ],
 })

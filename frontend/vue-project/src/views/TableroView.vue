@@ -1,13 +1,42 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { obtenerNotas } from '@/services/obtenerNotas'
+import api from '@/services/axios'
 import NotaCardComponent from '@/components/NotaCardComponent.vue'
 import NavbarComponent from '@/components/NavbarComponent.vue'
+import ModalCrearNota from '@/components/ModalCrearNota.vue'
+import ModalEditarNotas from '@/components/ModalEditarNotas.vue'
 
 const token = ref(localStorage.getItem('access'))
 const router = useRouter()
+const listadoNotas = ref([])
+const lienzo = ref(null)
+const notaEnEdicion = ref(null)
+const mostrarModalEditar = ref(false)
+
+const ANCHO_NOTA = 320
+const ALTO_NOTA = 220
+const SEPARACION = 24
+
+function adaptarNota(nota) {
+  return {
+    ...nota,
+    descripcion: nota.texto,
+    estado: nota.estado === 'en curso' ? 'en_curso' : nota.estado,
+    x: nota.posicion_x ?? 24,
+    y: nota.posicion_y ?? 24,
+  }
+}
+
+// obtener la lista de notas
+const obtenerNotasData = async () => {
+  const notasData = await obtenerNotas()
+  listadoNotas.value = (notasData ?? []).map(adaptarNota)
+}
 
 onMounted(() => {
+  obtenerNotasData()
   if (!token.value) {
     alert('No se encontró token de acceso. Redirigiendo a la página de inicio de sesión.')
     router.push('/')
@@ -16,86 +45,89 @@ onMounted(() => {
 
 const emit = defineEmits(['mover-nota', 'guardar-nota', 'eliminar-nota', 'nueva-nota'])
 
-const notas = ref([
-  {
-    id: 1,
-    titulo: 'Revisar propuesta del cliente',
-    descripcion: 'Preparar la propuesta para la reunión del viernes con el equipo de operaciones.',
-    estado: 'pendiente',
-    x: 20,
-    y: 20,
-  },
-  {
-    id: 2,
-    titulo: 'Actualizar documentación',
-    descripcion: 'Revisar y actualizar la documentación del proyecto y la API en Django.',
-    estado: 'en_curso',
-    x: 380,
-    y: 30,
-  },
-  {
-    id: 3,
-    titulo: 'Enviar informe',
-    descripcion: 'Enviar el informe final al equipo de dirección.',
-    estado: 'hecho',
-    x: 740,
-    y: 45,
-  },
-  {
-    id: 4,
-    titulo: 'Configurar base de datos MySQL',
-    descripcion: 'Verificar índices y backups automáticos del servidor.',
-    estado: 'pendiente',
-    x: 60,
-    y: 340,
-  },
-  {
-    id: 5,
-    titulo: 'Pruebas de endpoints REST',
-    descripcion: 'Validar autenticación por token y permisos de administrador.',
-    estado: 'en_curso',
-    x: 440,
-    y: 360,
-  },
-  {
-    id: 6,
-    titulo: 'Diseño de arquitectura inicial',
-    descripcion: 'Definir entidades Usuario, Rol y Nota para el equipo.',
-    estado: 'hecho',
-    x: 800,
-    y: 320,
-  },
-])
-
-const totalNotas = computed(() => notas.value.length)
-const contadorPendientes = computed(() => notas.value.filter((n) => n.estado === 'pendiente').length)
-const contadorEnCurso = computed(() => notas.value.filter((n) => n.estado === 'en_curso').length)
-const contadorHechas = computed(() => notas.value.filter((n) => n.estado === 'hecho').length)
+const totalNotas = computed(() => listadoNotas.value.length)
+const contadorPendientes = computed(() => listadoNotas.value.filter((n) => n.estado === 'pendiente').length)
+const contadorEnCurso = computed(() => listadoNotas.value.filter((n) => n.estado === 'en_curso').length)
+const contadorHechas = computed(() => listadoNotas.value.filter((n) => n.estado === 'hecho').length)
 
 function onMoverNota({ id, x, y }) {
-  const nota = notas.value.find((n) => n.id === id)
+  const nota = listadoNotas.value.find((n) => n.id === id)
   if (nota) {
-    nota.x = x
-    nota.y = y
+    const anchoDisponible = lienzo.value?.clientWidth ?? ANCHO_NOTA
+    const altoDisponible = lienzo.value?.clientHeight ?? ALTO_NOTA
+    nota.x = Math.max(0, Math.min(x, anchoDisponible - ANCHO_NOTA))
+    nota.y = Math.max(0, Math.min(y, altoDisponible - ALTO_NOTA))
+
+    api.patch(`/notas/notas/${id}/`, {
+      posicion_x: nota.x,
+      posicion_y: nota.y,
+    }).catch((error) => console.error('Error al guardar la posición:', error))
   }
-  emit('mover-nota', { id, x, y })
+  emit('mover-nota', { id, x: nota?.x ?? x, y: nota?.y ?? y })
 }
 
 function onGuardarNota({ id, estado }) {
-  const nota = notas.value.find((n) => n.id === id)
+  const nota = listadoNotas.value.find((n) => n.id === id)
   if (nota) {
     nota.estado = estado
+    api.patch(`/notas/notas/${id}/`, {
+      estado: estado === 'en_curso' ? 'en curso' : estado,
+    }).catch((error) => console.error('Error al guardar el estado:', error))
   }
   emit('guardar-nota', { id, estado })
 }
 
+function onEditarNota(id) {
+  notaEnEdicion.value = listadoNotas.value.find((nota) => nota.id === id) || null
+  mostrarModalEditar.value = Boolean(notaEnEdicion.value)
+}
+
+function cerrarModalEditar() {
+  mostrarModalEditar.value = false
+  notaEnEdicion.value = null
+}
+
+function onNotaEditada(notaActualizada) {
+  const indice = listadoNotas.value.findIndex((nota) => nota.id === notaActualizada.id)
+  if (indice !== -1) {
+    listadoNotas.value[indice] = adaptarNota(notaActualizada)
+  }
+  cerrarModalEditar()
+}
+
 function onEliminarNota(id) {
-  notas.value = notas.value.filter((n) => n.id !== id)
+  listadoNotas.value = listadoNotas.value.filter((n) => n.id !== id)
+  api.delete(`/notas/notas/${id}/`).catch((error) => console.error('Error al eliminar la nota:', error))
   emit('eliminar-nota', id)
 }
 
+// Modal de "Nueva nota"
+const mostrarModalCrear = ref(false)
+
 function crearNota() {
-  emit('nueva-nota')
+  mostrarModalCrear.value = true
+}
+
+function cerrarModalCrear() {
+  mostrarModalCrear.value = false
+}
+
+function siguientePosicion() {
+  const columnas = Math.max(
+    1,
+    Math.floor(((lienzo.value?.clientWidth ?? ANCHO_NOTA) - SEPARACION) / (ANCHO_NOTA + SEPARACION))
+  )
+  const indice = listadoNotas.value.length
+  return {
+    x: SEPARACION + (indice % columnas) * (ANCHO_NOTA + SEPARACION),
+    y: SEPARACION + Math.floor(indice / columnas) * (ALTO_NOTA + SEPARACION),
+  }
+}
+
+function onNotaCreada(nuevaNota) {
+  listadoNotas.value.push(adaptarNota(nuevaNota))
+  mostrarModalCrear.value = false
+  emit('nueva-nota', nuevaNota)
 }
 </script>
 
@@ -105,7 +137,7 @@ function crearNota() {
     <header class="tablero-header">
       <h1 class="tablero-title">Tablero de notas</h1>
       <button type="button" class="btn-nueva-nota" @click="crearNota">
-        + Nueva nota
+        Nueva nota
       </button>
     </header>
 
@@ -119,16 +151,31 @@ function crearNota() {
       <span class="resumen-hechas">{{ contadorHechas }} hechas</span>
     </section>
 
-    <section class="tablero-lienzo">
+    <section ref="lienzo" class="tablero-lienzo">
       <NotaCardComponent
-        v-for="nota in notas"
+        v-for="nota in listadoNotas"
         :key="nota.id"
         :nota="nota"
         @mover="onMoverNota"
         @guardar="onGuardarNota"
+        @editar="onEditarNota"
         @eliminar="onEliminarNota"
       />
     </section>
+
+    <ModalCrearNota
+      :mostrar="mostrarModalCrear"
+      :posicion-inicial="siguientePosicion()"
+      @cerrar="cerrarModalCrear"
+      @creada="onNotaCreada"
+    />
+
+    <ModalEditarNotas
+      :mostrar="mostrarModalEditar"
+      :nota="notaEnEdicion"
+      @cerrar="cerrarModalEditar"
+      @editado="onNotaEditada"
+    />
   </main>
 </template>
 

@@ -5,15 +5,11 @@ const props = defineProps({
   nota: {
     type: Object,
     required: true,
-    // Forma esperada: { id, titulo, descripcion, estado, x, y }
   },
 })
 
 const emit = defineEmits(['mover', 'guardar', 'eliminar'])
 
-// Posición local propia del componente para que el arrastre se sienta fluido;
-// se sincroniza si el padre cambia la posición desde afuera (por ejemplo tras
-// recibir la respuesta de la API).
 const posX = ref(props.nota.x)
 const posY = ref(props.nota.y)
 
@@ -99,6 +95,10 @@ function guardarCambios() {
         <option value="hecho">Hecho</option>
       </select>
 
+      <button type="button" class="nota-card__editar" @click="$emit('editar', nota.id)">
+        Editar
+      </button>
+
       <button type="button" class="nota-card__eliminar" @click="$emit('eliminar', nota.id)">
         Eliminar
       </button>
@@ -113,7 +113,7 @@ function guardarCambios() {
 <style scoped>
 .nota-card {
   position: absolute;
-  width: 320px;
+  width: 350px;
   border-radius: 10px;
   padding: 16px;
   cursor: grab;
@@ -204,6 +204,17 @@ function guardarCambios() {
   font-size: 13px;
   font-weight: 600;
   color: #dc2626;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.nota-card__editar {
+  margin-left: auto;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4d4d4d;
   background: none;
   border: none;
   cursor: pointer;
